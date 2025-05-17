@@ -68,9 +68,7 @@ func (db *PersonsDB) Delete(id int64) error {
 	return nil
 }
 
-func CreatePersonsDB() (*PersonsDB, error) {
-	dbOptions := "host=localhost user=postgres password=postgres dbname=personsdb port=5432 sslmode=disable"
-
+func CreatePersonsDB(dbOptions string) (*PersonsDB, error) {
 	logger.Log.Debug("Попытка подключения к базе данных")
 	DB, err := gorm.Open(postgres.Open(dbOptions), &gorm.Config{})
 	if err != nil {
