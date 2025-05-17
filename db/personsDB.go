@@ -2,8 +2,7 @@ package db
 
 import (
 	"fioservice/entity"
-	"fmt"
-	"log"
+	"fioservice/logger"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -13,39 +12,72 @@ type PersonsDB struct {
 	DB *gorm.DB
 }
 
-func (db *PersonsDB) Add(p *entity.Person) {
-	if err := db.DB.Create(p).Error; err != nil {
-		panic("Failed to save person: " + err.Error())
+func (db *PersonsDB) Add(p *entity.Person) error {
+	logger.Log.Debugf("Добавление нового человека: %+v", p)
+
+	err := db.DB.Create(p).Error
+	if err != nil {
+		logger.Log.Infof("Ошибка при добавлении человека: %v", err)
+		return err
 	}
+
+	logger.Log.Infof("Человек успешно добавлен: ID=%d", p.Id)
+	return nil
 }
 
-func (db *PersonsDB) Get() []entity.Person {
+func (db *PersonsDB) Get() ([]entity.Person, error) {
+	logger.Log.Debug("Запрос на получение всех людей")
+
 	var persons []entity.Person
 	tx := db.DB.Find(&persons)
-
 	if tx.Error != nil {
-		panic("Failed to save person: " + tx.Error.Error())
+		logger.Log.Infof("Ошибка при получении людей: %v", tx.Error)
+		return nil, tx.Error
 	}
 
-	return persons
+	logger.Log.Infof("Получено %d человек", len(persons))
+	return persons, nil
 }
 
-func (db *PersonsDB) Update(updated *entity.Person) {
-	db.DB.Model(updated).Where("id = ?", updated.Id).Updates(updated)
+func (db *PersonsDB) Update(updated *entity.Person) error {
+	logger.Log.Debugf("Обновление человека: %+v", updated)
+
+	err := db.DB.Model(updated).
+		Where("id = ?", updated.Id).
+		Updates(updated).
+		Error
+	if err != nil {
+		logger.Log.Infof("Ошибка при обновлении человека ID=%d: %v", updated.Id, err)
+		return err
+	}
+
+	logger.Log.Infof("Человек ID=%d успешно обновлен", updated.Id)
+	return nil
 }
 
-func (db *PersonsDB) Delete(id int64) {
-	db.DB.Delete(&entity.Person{Id: id})
+func (db *PersonsDB) Delete(id int64) error {
+	logger.Log.Debugf("Удаление человека с ID=%d", id)
+
+	err := db.DB.Delete(&entity.Person{Id: id}).Error
+	if err != nil {
+		logger.Log.Infof("Ошибка при удалении человека с ID=%d: %v", id, err)
+		return err
+	}
+
+	logger.Log.Infof("Человек ID=%d успешно удален", id)
+	return nil
 }
 
-func CreatePersonsDB() *PersonsDB {
+func CreatePersonsDB() (*PersonsDB, error) {
 	dbOptions := "host=localhost user=postgres password=postgres dbname=personsdb port=5432 sslmode=disable"
 
+	logger.Log.Debug("Попытка подключения к базе данных")
 	DB, err := gorm.Open(postgres.Open(dbOptions), &gorm.Config{})
 	if err != nil {
-		log.Fatal("Failed to connect to database: ", err)
+		logger.Log.Infof("Ошибка подключения к БД: %v", err)
+		return nil, err
 	}
-	fmt.Println("Database connected.")
 
-	return &PersonsDB{DB}
+	logger.Log.Info("Подключение к базе данных успешно")
+	return &PersonsDB{DB}, nil
 }

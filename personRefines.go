@@ -2,8 +2,8 @@ package main
 
 import (
 	"encoding/json"
+	"fioservice/logger"
 	"fmt"
-	"log"
 	"net/http"
 )
 
@@ -13,38 +13,59 @@ const (
 	nationApi = "https://api.nationalize.io/?name=%s"
 )
 
-func executeRequest(url string, data any) {
+func executeRequest(url string, data any) error {
+	logger.Log.Debugf("Выполнение GET запроса: %s", url)
+
 	resp, err := http.Get(url)
 	if err != nil {
-		log.Fatalf("Ошибка при запросе: %v", err)
+		logger.Log.Infof("Ошибка при запросе к %s: %v", url, err)
+		return err
 	}
 	defer resp.Body.Close()
 
+	logger.Log.Debugf("Ответ от %s получен. Статус: %s", url, resp.Status)
+
 	if err := json.NewDecoder(resp.Body).Decode(data); err != nil {
-		log.Fatalf("Ошибка при декодировании JSON: %v", err)
+		logger.Log.Infof("Ошибка декодирования JSON от %s: %v", url, err)
+		return err
 	}
+
+	logger.Log.Debugf("JSON успешно декодирован от %s", url)
+	return nil
 }
 
 type AgeData struct {
 	Age int `json:"age"`
 }
 
-func GetAgeByName(name string) int {
-	var decResp AgeData
-	executeRequest(fmt.Sprintf(ageApi, name), &decResp)
+func GetAgeByName(name string) (int, error) {
+	logger.Log.Debugf("Получение возраста по имени: %s", name)
 
-	return decResp.Age
+	var decResp AgeData
+	err := executeRequest(fmt.Sprintf(ageApi, name), &decResp)
+	if err != nil {
+		return 0, err
+	}
+
+	logger.Log.Infof("Возраст для %s: %d", name, decResp.Age)
+	return decResp.Age, nil
 }
 
 type GenderData struct {
 	Gender string `json:"gender"`
 }
 
-func GetGenderByName(name string) string {
-	var decResp GenderData
-	executeRequest(fmt.Sprintf(genderApi, name), &decResp)
+func GetGenderByName(name string) (string, error) {
+	logger.Log.Debugf("Получение пола по имени: %s", name)
 
-	return decResp.Gender
+	var decResp GenderData
+	err := executeRequest(fmt.Sprintf(genderApi, name), &decResp)
+	if err != nil {
+		return "", err
+	}
+
+	logger.Log.Infof("Пол для %s: %s", name, decResp.Gender)
+	return decResp.Gender, nil
 }
 
 type Country struct {
@@ -56,9 +77,14 @@ type NationData struct {
 	Countries []Country `json:"country"`
 }
 
-func GetNationByName(name string) string {
+func GetNationByName(name string) (string, error) {
+	logger.Log.Debugf("Получение страны по имени: %s", name)
+
 	var decResp NationData
-	executeRequest(fmt.Sprintf(nationApi, name), &decResp)
+	err := executeRequest(fmt.Sprintf(nationApi, name), &decResp)
+	if err != nil {
+		return "", err
+	}
 
 	cId := ""
 	maxProp := float64(0)
@@ -69,5 +95,6 @@ func GetNationByName(name string) string {
 		}
 	}
 
-	return cId
+	logger.Log.Infof("Страна для %s: %s (%.2f)", name, cId, maxProp)
+	return cId, nil
 }

@@ -9,10 +9,15 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var personsdb *db.PersonsDB = db.CreatePersonsDB()
+var personsdb *db.PersonsDB
 
 func GetPeople(c *gin.Context) {
-	c.JSON(http.StatusOK, personsdb.Get())
+	peoples, err := personsdb.Get()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	} else {
+		c.JSON(http.StatusOK, peoples)
+	}
 }
 
 func AddPerson(c *gin.Context) {
@@ -23,18 +28,27 @@ func AddPerson(c *gin.Context) {
 	}
 	refinePerson(&newPerson)
 
-	personsdb.Add(&newPerson)
-	c.JSON(http.StatusCreated, newPerson)
+	err := personsdb.Add(&newPerson)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	} else {
+		c.JSON(http.StatusCreated, newPerson)
+	}
 }
 
 func refinePerson(p *entity.Person) {
-	p.Age = GetAgeByName(p.Name)
-	p.Gender = GetGenderByName(p.Name)
-	p.Nation = GetNationByName(p.Name)
+	p.Age, _ = GetAgeByName(p.Name)
+	p.Gender, _ = GetGenderByName(p.Name)
+	p.Nation, _ = GetNationByName(p.Name)
 }
 
 func UpdatePerson(c *gin.Context) {
-	id, _ := strconv.ParseInt(c.Param("id"), 10, 64)
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		return
+	}
+
 	var updated entity.Person
 	if err := c.ShouldBindJSON(&updated); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -42,17 +56,25 @@ func UpdatePerson(c *gin.Context) {
 	}
 
 	updated.Id = id
-	personsdb.Update(&updated)
-	c.JSON(http.StatusOK, updated)
-
-	//c.JSON(http.StatusNotFound, gin.H{"error": "Person not found"})
+	err = personsdb.Update(&updated)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	} else {
+		c.JSON(http.StatusOK, updated)
+	}
 }
 
 func DeletePerson(c *gin.Context) {
-	id, _ := strconv.ParseInt(c.Param("id"), 10, 64)
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		return
+	}
 
-	personsdb.Delete(id)
-	c.Status(http.StatusNoContent)
-
-	//c.JSON(http.StatusNotFound, gin.H{"error": "Person not found"})
+	err = personsdb.Delete(id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	} else {
+		c.Status(http.StatusNoContent)
+	}
 }
