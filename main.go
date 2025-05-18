@@ -6,9 +6,13 @@ import (
 	"fmt"
 	"os"
 
+	_ "fioservice/docs"
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
@@ -17,6 +21,10 @@ import (
 	"github.com/joho/godotenv"
 )
 
+// @title FIOservice API
+// @version 1.0
+// @description Сервис обогощения ФИО наиболее вероятными возрастом, полом и национальностью
+// @host localhost:8080
 func main() {
 	var err error
 	err = godotenv.Load()
@@ -48,6 +56,8 @@ func main() {
 
 	r := gin.Default()
 	r.Use(cors.Default())
+
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	r.GET("/persons", GetPeople)
 	r.POST("/persons", AddPerson)

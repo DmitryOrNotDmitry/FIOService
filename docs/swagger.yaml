@@ -1,0 +1,207 @@
+definitions:
+  entity.Person:
+    properties:
+      age:
+        type: integer
+      gender:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      nation:
+        type: string
+      patronymic:
+        type: string
+      surname:
+        type: string
+    type: object
+  entity.PersonRequest:
+    properties:
+      name:
+        example: Dmitriy
+        type: string
+      patronymic:
+        example: Vasilevich
+        type: string
+      surname:
+        example: Ushakov
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: Сервис обогощения ФИО наиболее вероятными возрастом, полом и национальностью
+  title: FIOservice API
+  version: "1.0"
+paths:
+  /persons:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает список людей по заданным фильтрам (имя, фамилия, возраст
+        и др.)
+      parameters:
+      - description: Имя
+        in: query
+        name: name
+        type: string
+      - description: Фамилия
+        in: query
+        name: surname
+        type: string
+      - description: Отчество
+        in: query
+        name: patronymic
+        type: string
+      - description: Пол
+        in: query
+        name: gender
+        type: string
+      - description: Национальность
+        in: query
+        name: nation
+        type: string
+      - description: Минимальный возраст
+        in: query
+        name: min_age
+        type: integer
+      - description: Максимальный возраст
+        in: query
+        name: max_age
+        type: integer
+      - description: Количество записей для возврата
+        in: query
+        name: limit
+        type: integer
+      - description: Смещение для пагинации
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/entity.Person'
+            type: array
+        "400":
+          description: Неверные параметры фильтра
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Получить список людей с фильтрацией
+      tags:
+      - persons
+    post:
+      consumes:
+      - application/json
+      description: Создаёт новую запись о человеке
+      parameters:
+      - description: Данные нового человека
+        in: body
+        name: person
+        required: true
+        schema:
+          $ref: '#/definitions/entity.PersonRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/entity.Person'
+        "400":
+          description: Неверные данные
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Добавить нового человека
+      tags:
+      - persons
+  /persons/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Удаляет человека по ID
+      parameters:
+      - description: ID человека
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Успешное удаление
+        "400":
+          description: Неверный ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Удалить человека
+      tags:
+      - persons
+    put:
+      consumes:
+      - application/json
+      description: Обновляет данные существующего человека по ID
+      parameters:
+      - description: ID человека
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Обновлённые данные
+        in: body
+        name: person
+        required: true
+        schema:
+          $ref: '#/definitions/entity.PersonRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.Person'
+        "400":
+          description: Неверный ID или тело запроса
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Обновить информацию о человеке
+      tags:
+      - persons
+swagger: "2.0"

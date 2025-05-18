@@ -13,29 +13,59 @@ type PersonsDB struct {
 }
 
 func (db *PersonsDB) Add(p *entity.Person) error {
-	logger.Log.Debugf("Добавление нового человека: %+v", p)
+	logger.Log.Debugf("Создание нового человека: %+v", p)
 
 	err := db.DB.Create(p).Error
 	if err != nil {
-		logger.Log.Infof("Ошибка при добавлении человека: %v", err)
+		logger.Log.Infof("Ошибка при создании человека: %v", err)
 		return err
 	}
 
-	logger.Log.Infof("Человек успешно добавлен: ID=%d", p.Id)
+	logger.Log.Infof("Человек успешно создан: ID=%d", p.Id)
 	return nil
 }
 
-func (db *PersonsDB) Get() ([]entity.Person, error) {
-	logger.Log.Debug("Запрос на получение всех людей")
+func (db *PersonsDB) Get(filter *entity.PersonFilter) ([]entity.Person, error) {
+	logger.Log.Debug("Запрос на поиск людей с фильтрами")
 
 	var persons []entity.Person
-	tx := db.DB.Find(&persons)
+	query := db.DB.Model(&entity.Person{})
+
+	if filter.Name != nil {
+		query = query.Where("name ILIKE ?", "%"+*filter.Name+"%")
+	}
+	if filter.Surname != nil {
+		query = query.Where("surname ILIKE ?", "%"+*filter.Surname+"%")
+	}
+	if filter.Patronymic != nil {
+		query = query.Where("patronymic ILIKE ?", "%"+*filter.Patronymic+"%")
+	}
+	if filter.Gender != nil {
+		query = query.Where("gender = ?", *filter.Gender)
+	}
+	if filter.Nation != nil {
+		query = query.Where("nation = ?", *filter.Nation)
+	}
+	if filter.MinAge != nil {
+		query = query.Where("age >= ?", *filter.MinAge)
+	}
+	if filter.MaxAge != nil {
+		query = query.Where("age <= ?", *filter.MaxAge)
+	}
+	if filter.Limit > 0 {
+		query = query.Limit(filter.Limit)
+	}
+	if filter.Offset > 0 {
+		query = query.Offset(filter.Offset)
+	}
+
+	tx := query.Find(&persons)
 	if tx.Error != nil {
-		logger.Log.Infof("Ошибка при получении людей: %v", tx.Error)
+		logger.Log.Infof("Ошибка при поиске людей: %v", tx.Error)
 		return nil, tx.Error
 	}
 
-	logger.Log.Infof("Получено %d человек", len(persons))
+	logger.Log.Infof("Найдено %d человек", len(persons))
 	return persons, nil
 }
 
