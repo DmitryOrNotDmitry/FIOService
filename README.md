@@ -1,6 +1,6 @@
 # FIO Service
 
-This project is a RESTful information service for processing full name data. It automatically enriches the input with estimated age, gender, and nationality using public APIs, and stores the results in a PostgreSQL database.
+This project is a REST information service for processing full name data. It automatically enriches the input with estimated age, gender, and nationality using public APIs, and stores the results in a PostgreSQL database.
 
 The system provides the following functionalities for users:
 - Adding, updating, and deleting persons via REST API
